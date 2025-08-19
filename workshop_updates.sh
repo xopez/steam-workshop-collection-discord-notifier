@@ -34,8 +34,9 @@ fetch_items_details() {
     itemcount=${#ids[@]}
 
     if [ "$itemcount" -eq 0 ]; then
+        echo "[INFO] The workshop collection is empty or could not be loaded."
         echo '[]'
-        return
+        exit 1
     fi
 
     post_data="-d itemcount=$itemcount"
