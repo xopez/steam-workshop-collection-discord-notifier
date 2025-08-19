@@ -65,6 +65,25 @@ Add a line like this to check every 30 minutes:
 - Only new or changed items are reported to Discord.
 - The script can be run as often as you like.
 
+## Example `workshop_items.json`
+
+This file is created automatically and stores the last known state of your collection:
+
+```json
+[
+  {
+    "id": "123456789",
+    "title": "Example Workshop Item",
+    "updated": 1712345678
+  },
+  {
+    "id": "987654321",
+    "title": "Another Item",
+    "updated": 1712345689
+  }
+]
+```
+
 ## License
 
 MIT License
