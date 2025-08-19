@@ -5,23 +5,38 @@ DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/..." # Replace with your D
 # Dependencies: jq, curl
 ITEMS_DATA_FILE="workshop_items.json"
 
+check_dependencies() {
+    local missing=0
+    for dep in jq curl; do
+        if ! command -v "$dep" >/dev/null 2>&1; then
+            echo "[ERROR] Required dependency missing: $dep"
+            missing=1
+        fi
+    done
+    if [ $missing -eq 1 ]; then
+        echo "Please install the missing dependencies and run the script again."
+        exit 1
+    fi
+}
+
+check_dependencies
+
 # Compact error check for ID and webhook
 if [[ "$WORKSHOP_COLLECTION_ID" == "12334567890" || -z "$WORKSHOP_COLLECTION_ID" || "$DISCORD_WEBHOOK_URL" == "https://discord.com/api/webhooks/..." || -z "$DISCORD_WEBHOOK_URL" ]]; then
     echo "[ERROR] Invalid or missing WORKSHOP_COLLECTION_ID or DISCORD_WEBHOOK_URL."
     exit 1
 fi
 
-# Fetch item details (including preview_url, only one API request per function)
 fetch_items_details() {
     children_json=$(curl -s -X POST "https://api.steampowered.com/ISteamRemoteStorage/GetCollectionDetails/v1/" \
         -d "collectioncount=1" -d "publishedfileids[0]=$WORKSHOP_COLLECTION_ID")
-    # Check if children exist and are an array
-    if ! echo "$children_json" | jq -e '.response.collectiondetails[0].children | arrays and length > 0' >/dev/null; then
+    mapfile -t ids < <(echo "$children_json" | jq -r 'try .response.collectiondetails[0].children // [] | .[].publishedfileid')
+    itemcount=${#ids[@]}
+
+    if [ "$itemcount" -eq 0 ]; then
         echo '[]'
         return
     fi
-    mapfile -t ids < <(echo "$children_json" | jq -r '.response.collectiondetails[0].children[].publishedfileid')
-    itemcount=${#ids[@]}
 
     post_data="-d itemcount=$itemcount"
     for i in "${!ids[@]}"; do
