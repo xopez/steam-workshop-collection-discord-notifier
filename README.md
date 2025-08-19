@@ -23,7 +23,7 @@ sudo apt-get install jq curl
 
 1. **Clone the repository:**
     ```sh
-    git clone https://github.com/your-username/steam-workshop-collection-notifier-to-discord.git
+    git clone https://github.com/xopez/steam-workshop-collection-notifier-to-discord.git
     cd steam-workshop-collection-notifier-to-discord
     ```
 
