@@ -65,39 +65,35 @@ send_discord_updates() {
           {id: $n.id, newtitle: $n.title, oldtitle: ($o.title // null), updated: $n.updated, oldupdated: ($o.updated // null)}
         ]')
 
-    echo "$updates" | jq -rc '.[] | {id, newtitle, oldtitle, updated, oldupdated, url: ("https://steamcommunity.com/sharedfiles/filedetails/?id=" + .id)}' |
-        while read -r item; do
-            id=$(echo "$item" | jq -r '.id')
-            title=$(echo "$item" | jq -r '.newtitle')
-            oldtitle=$(echo "$item" | jq -r '.oldtitle')
-            updated=$(echo "$item" | jq -r '.updated')
-            oldupdated=$(echo "$item" | jq -r '.oldupdated')
-            url=$(echo "$item" | jq -r '.url')
-            # Fetch preview image (now here, not in the JSON)
-            preview_url=$(curl -s "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/" \
-                -d itemcount=1 -d publishedfileids[0]="$id" | jq -r '.response.publishedfiledetails[0].preview_url')
-            # Placeholder for missing values
-            if [ "$title" = "null" ] || [ -z "$title" ]; then
-                title="Unknown"
-            fi
-            if [ "$updated" = "null" ] || [ -z "$updated" ]; then
-                updated_en="Unknown"
-            else
-                updated_en=$(date -d @"$updated" '+%Y-%m-%d %H:%M' 2>/dev/null || date -r "$updated" '+%Y-%m-%d %H:%M')
-            fi
-            # Change description
-            changes=""
-            if [ "$title" != "$oldtitle" ] && [ "$updated" != "$oldupdated" ]; then
-                changes="✏️ Title changed & new update published."
-            elif [ "$title" != "$oldtitle" ]; then
-                changes="✏️ Title changed."
-            elif [ "$updated" != "$oldupdated" ]; then
-                changes="🆕 New update published."
-            else
-                changes="🆕 First time detection or incomplete comparison data."
-            fi
-
-            embed_json=$(jq -n --arg title "$title" --arg url "$url" --arg img "$preview_url" --arg updated "$updated_en" --arg changes "$changes" '{embeds: [{
+    embeds="[]"
+    while read -r item; do
+        id=$(echo "$item" | jq -r '.id')
+        title=$(echo "$item" | jq -r '.newtitle')
+        oldtitle=$(echo "$item" | jq -r '.oldtitle')
+        updated=$(echo "$item" | jq -r '.updated')
+        oldupdated=$(echo "$item" | jq -r '.oldupdated')
+        url=$(echo "$item" | jq -r '.url')
+        preview_url=$(curl -s "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/" \
+            -d itemcount=1 -d publishedfileids[0]="$id" | jq -r '.response.publishedfiledetails[0].preview_url')
+        if [ "$title" = "null" ] || [ -z "$title" ]; then
+            title="Unknown"
+        fi
+        if [ "$updated" = "null" ] || [ -z "$updated" ]; then
+            updated_en="Unknown"
+        else
+            updated_en=$(date -d @"$updated" '+%Y-%m-%d %H:%M' 2>/dev/null || date -r "$updated" '+%Y-%m-%d %H:%M')
+        fi
+        changes=""
+        if [ "$title" != "$oldtitle" ] && [ "$updated" != "$oldupdated" ]; then
+            changes="✏️ Title changed & new update published."
+        elif [ "$title" != "$oldtitle" ]; then
+            changes="✏️ Title changed."
+        elif [ "$updated" != "$oldupdated" ]; then
+            changes="🆕 New update published."
+        else
+            changes="🆕 First time detection or incomplete comparison data."
+        fi
+        embed=$(jq -n --arg title "$title" --arg url "$url" --arg img "$preview_url" --arg updated "$updated_en" --arg changes "$changes" '{
             title: $title,
             thumbnail: {url: $img},
             fields: [
@@ -105,10 +101,15 @@ send_discord_updates() {
                 {name: "\uD83D\uDD17 Workshop Link", value: $url, inline: false},
                 {name: "\u2139\uFE0F Change", value: $changes, inline: false}
             ]
-        }]}')
-            curl -s -H "Content-Type: application/json" -X POST \
-                -d "$embed_json" "$DISCORD_WEBHOOK_URL" >/dev/null
-        done
+        }')
+        embeds=$(jq --argjson embed "$embed" '. + [$embed]' <<<"$embeds")
+    done < <(echo "$updates" | jq -rc '.[] | {id, newtitle, oldtitle, updated, oldupdated, url: ("https://steamcommunity.com/sharedfiles/filedetails/?id=" + .id)}')
+
+    if [ "$embeds" != "[]" ]; then
+        embed_json=$(jq -n --argjson embeds "$embeds" '{embeds: $embeds}')
+        curl -s -H "Content-Type: application/json" -X POST \
+            -d "$embed_json" "$DISCORD_WEBHOOK_URL" >/dev/null
+    fi
 
     echo "$new_json" >"$ITEMS_DATA_FILE"
 }
