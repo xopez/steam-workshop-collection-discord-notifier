@@ -35,7 +35,6 @@ fetch_items_details() {
 
     if [ "$itemcount" -eq 0 ]; then
         echo "[INFO] The workshop collection is empty or could not be loaded."
-        echo '[]'
         exit 1
     fi
 
