@@ -1,6 +1,6 @@
 #!/bin/bash
 
-WORKSHOP_COLLECTION_ID="12334567890"                              # Replace with your Workshop Collection ID
+WORKSHOP_COLLECTION_ID="12334567890"                       # Replace with your Workshop Collection ID
 DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/..." # Replace with your Discord Webhook URL
 # Dependencies: jq, curl
 ITEMS_DATA_FILE="workshop_items.json"
