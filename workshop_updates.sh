@@ -28,7 +28,7 @@ fetch_items_details() {
         post_data+=" -d publishedfileids[$i]=${ids[$i]}"
     done
 
-    details_json=$(eval curl -s -X POST "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/" $post_data)
+    details_json=$(eval curl -s -X POST "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/" "$post_data")
     echo "$details_json" | jq '[.response.publishedfiledetails[] | {id: .publishedfileid, title: .title, updated: .time_updated}]'
 }
 
