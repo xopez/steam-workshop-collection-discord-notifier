@@ -81,7 +81,7 @@ send_discord_updates() {
         if [ "$updated" = "null" ] || [ -z "$updated" ]; then
             updated_en="Unknown"
         else
-            updated_en=$(date -d @"$updated" 2>/dev/null || date -r "$updated")
+            updated_en=$(date -d @"$updated" '+%Y-%m-%d %H:%M' 2>/dev/null || date -r "$updated" '+%Y-%m-%d %H:%M')
         fi
         changes=""
         if [ "$title" != "$oldtitle" ] && [ "$updated" != "$oldupdated" ]; then
