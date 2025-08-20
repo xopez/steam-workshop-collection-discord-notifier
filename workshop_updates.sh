@@ -43,7 +43,7 @@ fetch_items_details() {
     done
 
     details_json=$(eval curl -s -X POST "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/" "$post_data")
-    echo "$details_json" | jq '[.response.publishedfiledetails[] | {id: .publishedfileid, title: .title, updated: .time_updated}]'
+    echo "$details_json" | jq '[.response.publishedfiledetails[] | if (.result == 9) then {id: .publishedfileid, title: "Deleted, Banned or Unlisted Item", updated: .time_updated, removed: true} else {id: .publishedfileid, title: .title, updated: .time_updated, removed: false} end]'
 }
 
 send_discord_updates() {
