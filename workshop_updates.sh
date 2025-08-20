@@ -107,13 +107,13 @@ send_discord_updates() {
 
     total_embeds=${#embeds_array[@]}
     batch_size=10
-    for ((i=0; i<total_embeds; i+=batch_size)); do
+    for ((i = 0; i < total_embeds; i += batch_size)); do
         embeds_batch="["
-        for ((j=0; j<batch_size && i+j<total_embeds; j++)); do
+        for ((j = 0; j < batch_size && i + j < total_embeds; j++)); do
             if [ $j -ne 0 ]; then
                 embeds_batch+=","
             fi
-            embeds_batch+="${embeds_array[i+j]}"
+            embeds_batch+="${embeds_array[i + j]}"
         done
         embeds_batch+="]"
         embed_json=$(jq -n --argjson embeds "$embeds_batch" '{embeds: $embeds}')
