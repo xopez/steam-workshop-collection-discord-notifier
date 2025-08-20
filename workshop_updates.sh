@@ -2,7 +2,6 @@
 
 WORKSHOP_COLLECTION_ID="12334567890"                       # Replace with your Workshop Collection ID
 DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/..." # Replace with your Discord Webhook URL
-STEAM_API_KEY="your_steam_api_key_here"                    # Replace with your Steam Web API Key
 ITEMS_DATA_FILE="workshop_items.json"
 
 check_dependencies() {
@@ -27,14 +26,8 @@ if [[ "$WORKSHOP_COLLECTION_ID" == "12334567890" || -z "$WORKSHOP_COLLECTION_ID"
     exit 1
 fi
 
-# Check for valid Steam API key
-if [[ "$STEAM_API_KEY" == "your_steam_api_key_here" || -z "$STEAM_API_KEY" ]]; then
-    echo "[ERROR] Invalid or missing STEAM_API_KEY."
-    exit 1
-fi
-
 fetch_items_details() {
-    children_json=$(curl -s -X POST "https://api.steampowered.com/ISteamRemoteStorage/GetCollectionDetails/v1/?key=$STEAM_API_KEY" \
+    children_json=$(curl -s -X POST "https://api.steampowered.com/ISteamRemoteStorage/GetCollectionDetails/v1/" \
         -d "collectioncount=1" -d "publishedfileids[0]=$WORKSHOP_COLLECTION_ID")
     mapfile -t ids < <(echo "$children_json" | jq -r 'try .response.collectiondetails[0].children // [] | .[].publishedfileid')
     itemcount=${#ids[@]}
@@ -49,7 +42,7 @@ fetch_items_details() {
         post_data+=" -d publishedfileids[$i]=${ids[$i]}"
     done
 
-    details_json=$(eval curl -s -X POST "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/?key=$STEAM_API_KEY" "$post_data")
+    details_json=$(eval curl -s -X POST "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/" "$post_data")
     echo "$details_json" | jq '[.response.publishedfiledetails[] | {id: .publishedfileid, title: .title, updated: .time_updated}]'
 }
 
@@ -79,7 +72,7 @@ send_discord_updates() {
         updated=$(echo "$item" | jq -r '.updated')
         oldupdated=$(echo "$item" | jq -r '.oldupdated')
         url=$(echo "$item" | jq -r '.url')
-        preview_url=$(curl -s "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/?key=$STEAM_API_KEY" \
+        preview_url=$(curl -s "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/" \
             -d itemcount=1 -d publishedfileids[0]="$id" | jq -r '.response.publishedfiledetails[0].preview_url')
         if [ "$title" = "null" ] || [ -z "$title" ]; then
             title="Unknown"
