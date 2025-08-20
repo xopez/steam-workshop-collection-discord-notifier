@@ -65,7 +65,7 @@ send_discord_updates() {
           {id: $n.id, newtitle: $n.title, oldtitle: ($o.title // null), updated: $n.updated, oldupdated: ($o.updated // null)}
         ]')
 
-    embeds="[]"
+    embeds_array=()
     while read -r item; do
         id=$(echo "$item" | jq -r '.id')
         title=$(echo "$item" | jq -r '.newtitle')
@@ -102,14 +102,24 @@ send_discord_updates() {
                 {name: "\u2139\uFE0F Change", value: $changes, inline: false}
             ]
         }')
-        embeds=$(jq --argjson embed "$embed" '. + [$embed]' <<<"$embeds")
+        embeds_array+=("$embed")
     done < <(echo "$updates" | jq -rc '.[] | {id, newtitle, oldtitle, updated, oldupdated, url: ("https://steamcommunity.com/sharedfiles/filedetails/?id=" + .id)}')
 
-    if [ "$embeds" != "[]" ]; then
-        embed_json=$(jq -n --argjson embeds "$embeds" '{embeds: $embeds}')
+    total_embeds=${#embeds_array[@]}
+    batch_size=10
+    for ((i=0; i<total_embeds; i+=batch_size)); do
+        embeds_batch="["
+        for ((j=0; j<batch_size && i+j<total_embeds; j++)); do
+            if [ $j -ne 0 ]; then
+                embeds_batch+=","
+            fi
+            embeds_batch+="${embeds_array[i+j]}"
+        done
+        embeds_batch+="]"
+        embed_json=$(jq -n --argjson embeds "$embeds_batch" '{embeds: $embeds}')
         curl -s -H "Content-Type: application/json" -X POST \
             -d "$embed_json" "$DISCORD_WEBHOOK_URL" >/dev/null
-    fi
+    done
 
     echo "$new_json" >"$ITEMS_DATA_FILE"
 }
