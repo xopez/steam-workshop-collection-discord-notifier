@@ -292,7 +292,7 @@ detect_changes() {
                     listed_items+=("$id|$new_time|$new_title|$old_data_source|$new_data_source")
                     ;;
                 "api->scraped")
-                    if [ "$new_title" = "Unavailable resource" ]; then
+                    if [ "$new_title" = "Steam Community :: Error" ]; then
                         unavailable_items+=("$id|$new_time|$old_title|$old_data_source|$new_data_source")
                     else
                         unlisted_items+=("$id|$new_time|$new_title|$old_data_source|$new_data_source")
@@ -306,7 +306,7 @@ detect_changes() {
                     ;;
                 "*->scraped")
                     if [ "$old_data_source" != "api" ] && [ "$old_data_source" != "unavailable" ]; then
-                        if [ "$new_title" = "Unavailable resource" ]; then
+                        if [ "$new_title" = "Steam Community :: Error" ]; then
                             unavailable_items+=("$id|$new_time|$old_title|$old_data_source|$new_data_source")
                         else
                             unlisted_items+=("$id|$new_time|$new_title|$old_data_source|$new_data_source")
@@ -319,7 +319,7 @@ detect_changes() {
                 esac
             # Handle content changes (same data_source)
             elif [ "$time_changed" = true ] && [ "$title_changed" = true ]; then
-                if [ "$new_title" = "Unavailable resource" ]; then
+                if [ "$new_title" = "Steam Community :: Error" ]; then
                     unavailable_items+=("$id|$new_time|$old_title|$new_data_source|$new_data_source")
                 else
                     title_and_update_items+=("$id|$old_time|$new_time|$old_title|$new_title|$new_data_source")
@@ -327,7 +327,7 @@ detect_changes() {
             elif [ "$time_changed" = true ]; then
                 updated_items+=("$id|$old_time|$new_time|$new_title|$new_data_source")
             elif [ "$title_changed" = true ]; then
-                if [ "$new_title" = "Unavailable resource" ]; then
+                if [ "$new_title" = "Steam Community :: Error" ]; then
                     unavailable_items+=("$id|$new_time|$old_title|$new_data_source|$new_data_source")
                 else
                     title_changed_items+=("$id|$old_title|$new_title|$new_data_source")
@@ -612,7 +612,8 @@ scrape_workshop_item() {
 
     # Check for Steam Community Error page
     if echo "$page_content" | grep -q '<title>Steam Community :: Error</title>'; then
-        scraped_title=""
+        echo "{\"publishedfileid\":\"$item_id\",\"time_updated\":null,\"title\":\"Steam Community :: Error\",\"result\":9,\"data_source\":\"unavailable\"}"
+        return
     fi
 
     # Extract preview image URL from meta tag
@@ -666,7 +667,7 @@ scrape_workshop_item() {
         echo "{\"publishedfileid\":\"$item_id\",\"time_updated\":null,\"title\":\"Listed Item (No Title)\",\"result\":9,\"data_source\":\"scraped\"}"
     else
         # No meaningful page content - item is truly unavailable
-        echo "{\"publishedfileid\":\"$item_id\",\"time_updated\":null,\"title\":\"Unavailable resource\",\"result\":9,\"data_source\":\"unavailable\"}"
+        echo "{\"publishedfileid\":\"$item_id\",\"time_updated\":null,\"title\":\"Steam Community :: Error\",\"result\":9,\"data_source\":\"unavailable\"}"
     fi
 }
 
@@ -728,7 +729,6 @@ process_batch() {
         if [ -s "$batch_file" ]; then
             jq -s '.' "$batch_file" >"$batch_file.array" && mv "$batch_file.array" "$batch_file"
             echo "$batch_file" >>"$TEMP_DIR/batch_list.txt"
-            echo -e "${GREEN}Batch file created: $batch_file${NC}"
         fi
     fi
 }
