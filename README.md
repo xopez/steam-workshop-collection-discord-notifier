@@ -49,8 +49,8 @@ sudo apt update
 sudo apt install curl jq
 
 # Clone the repository
-git clone https://github.com/xopez/steam-workshop-collection-notifier-to-discord.git
-cd steam-workshop-collection-notifier-to-discord
+git clone https://github.com/xopez/steam-workshop-collection-discord-notifier.git
+cd steam-workshop-collection-discord-notifier
 
 # Make the script executable
 chmod +x workshop_updates.sh
@@ -62,8 +62,8 @@ chmod +x workshop_updates.sh
 brew install curl jq
 
 # Clone the repository
-git clone https://github.com/xopez/steam-workshop-collection-notifier-to-discord.git
-cd steam-workshop-collection-notifier-to-discord
+git clone https://github.com/xopez/steam-workshop-collection-discord-notifier.git
+cd steam-workshop-collection-discord-notifier
 
 # Make the script executable
 chmod +x workshop_updates.sh
