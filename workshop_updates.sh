@@ -87,11 +87,10 @@ command -v jq &>/dev/null || {
 echo -e "${GREEN}Loading Steam Workshop Collection ID: $COLLECTION_ID${NC}"
 COLLECTION_URL="https://api.steampowered.com/ISteamRemoteStorage/GetCollectionDetails/v1/"
 echo -e "${YELLOW}Sending API request...${NC}"
-RESPONSE=$(curl -s -m "$CURL_TIMEOUT" -X POST -H "Content-Type: application/x-www-form-urlencoded" -d "collectioncount=1&publishedfileids[0]=$COLLECTION_ID" "$COLLECTION_URL")
-[ $? -ne 0 ] && {
+if ! RESPONSE=$(curl -s -m "$CURL_TIMEOUT" -X POST -H "Content-Type: application/x-www-form-urlencoded" -d "collectioncount=1&publishedfileids[0]=$COLLECTION_ID" "$COLLECTION_URL"); then
     echo -e "${RED}Error fetching collection details${NC}"
     exit 1
-}
+fi
 
 if echo "$RESPONSE" | grep -q '"result":1'; then
     COLLECTION_NAME=$(echo "$RESPONSE" | jq -r '.response.collectiondetails[0].title' 2>/dev/null)
@@ -137,12 +136,32 @@ get_timezone() {
     local day="$2"
     local month_num=0
     case "$month" in
-    Jan) month_num=1 ;; Feb) month_num=2 ;; Mar) month_num=3 ;; Apr) month_num=4 ;; May) month_num=5 ;; Jun) month_num=6 ;; Jul) month_num=7 ;; Aug) month_num=8 ;; Sep) month_num=9 ;; Oct) month_num=10 ;; Nov) month_num=11 ;; Dec) month_num=12 ;; *)
+    Jan) month_num=1 ;;
+    Feb) month_num=2 ;;
+    Mar) month_num=3 ;;
+    Apr) month_num=4 ;;
+    May) month_num=5 ;;
+    Jun) month_num=6 ;;
+    Jul) month_num=7 ;;
+    Aug) month_num=8 ;;
+    Sep) month_num=9 ;;
+    Oct) month_num=10 ;;
+    Nov) month_num=11 ;;
+    Dec) month_num=12 ;;
+    *)
         echo "PST"
         return
         ;;
     esac
-    if [ "$month_num" -ge 4 ] && [ "$month_num" -le 9 ]; then echo "PDT"; elif [ "$month_num" -eq 3 ] && [ "$day" -ge 8 ]; then echo "PDT"; elif [ "$month_num" -eq 10 ] || ([ "$month_num" -eq 11 ] && [ "$day" -le 7 ]); then echo "PDT"; else echo "PST"; fi
+    if [ "$month_num" -ge 4 ] && [ "$month_num" -le 9 ]; then
+        echo "PDT"
+    elif [ "$month_num" -eq 3 ] && [ "$day" -ge 8 ]; then
+        echo "PDT"
+    elif [ "$month_num" -eq 10 ] || { [ "$month_num" -eq 11 ] && [ "$day" -le 7 ]; }; then
+        echo "PDT"
+    else
+        echo "PST"
+    fi
 }
 escape_json() { echo "$1" | sed 's/\\/\\\\/g; s/"/\\"/g; s/\t/\\t/g; s/\r/\\r/g; s/\n/\\n/g'; }
 
@@ -561,7 +580,7 @@ scrape_workshop_item() {
 
     # Second request with saved cookies and session continuity
     local page_content
-    page_content=$(curl -s -m "$CURL_TIMEOUT" --compressed \
+    if ! page_content=$(curl -s -m "$CURL_TIMEOUT" --compressed \
         -H "User-Agent: $random_ua" \
         -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8" \
         -H "Accept-Language: en-US,en;q=0.9,de;q=0.8" \
@@ -577,12 +596,10 @@ scrape_workshop_item() {
         -H "Upgrade-Insecure-Requests: 1" \
         -H "Session-Id: $session_id" \
         -b "$cookie_jar" \
-        "$item_url")
-
-    [ $? -ne 0 ] || [ -z "$page_content" ] && {
+        "$item_url"); then
         echo "{\"publishedfileid\":\"$item_id\",\"time_updated\":null,\"title\":\"Unavailable resource\",\"result\":9,\"data_source\":null}"
         return
-    }
+    fi
 
     # Extract item title
     local scraped_title
@@ -667,12 +684,13 @@ process_batch() {
 
     # Batch API request with timeout
     local batch_response
-    batch_response=$(curl -s -m "$CURL_TIMEOUT" -X POST \
+    if ! batch_response=$(curl -s -m "$CURL_TIMEOUT" -X POST \
         -H "Content-Type: application/x-www-form-urlencoded" \
         -d "$post_data" \
-        "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/")
-
-    if [ $? -eq 0 ] && [ -n "$batch_response" ]; then
+        "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/"); then
+        return
+    fi
+    if [ -n "$batch_response" ]; then
         # Extract desired fields for all items in batch
         echo "$batch_response" | jq -c '.response.publishedfiledetails[]' >"$batch_file.tmp" 2>/dev/null
 
