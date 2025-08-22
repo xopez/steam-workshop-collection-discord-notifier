@@ -62,7 +62,48 @@ while getopts "c:o:b:w:h" opt; do
     esac
 done
 
+# --- Dependency Check Function ---
+check_dependencies() {
+    local missing_deps=()
+
+    # Check for required dependencies
+    if ! command -v curl &>/dev/null; then
+        missing_deps+=("curl")
+    fi
+
+    if ! command -v jq &>/dev/null; then
+        missing_deps+=("jq")
+    fi
+
+    # Check for date command (should be available on most systems)
+    if ! command -v date &>/dev/null; then
+        missing_deps+=("date")
+    fi
+
+    # Check for mktemp command
+    if ! command -v mktemp &>/dev/null; then
+        missing_deps+=("mktemp")
+    fi
+
+    # Report missing required dependencies
+    if [ ${#missing_deps[@]} -gt 0 ]; then
+        echo -e "${RED}Error: Missing required dependencies:${NC}"
+        for dep in "${missing_deps[@]}"; do
+            echo -e "${RED}  - $dep${NC}"
+        done
+        echo ""
+        echo -e "${YELLOW}Installation instructions:${NC}"
+        echo -e "${YELLOW}  Ubuntu/Debian: sudo apt install ${missing_deps[*]}${NC}"
+        echo -e "${YELLOW}  CentOS/RHEL:   sudo yum install ${missing_deps[*]}${NC}"
+        echo -e "${YELLOW}  Fedora:        sudo dnf install ${missing_deps[*]}${NC}"
+        echo -e "${YELLOW}  macOS:         brew install ${missing_deps[*]}${NC}"
+        exit 1
+    fi
+}
+
 # --- Preflight Checks ---
+check_dependencies
+
 [ -z "$COLLECTION_ID" ] && {
     echo -e "${RED}Error: Collection ID is required${NC}"
     show_help
@@ -72,15 +113,6 @@ done
     echo -e "${RED}Error: Collection ID must be numeric${NC}\n"
     show_help
     exit 1
-}
-command -v curl &>/dev/null || {
-    echo -e "${RED}Error: curl is not installed${NC}"
-    exit 1
-}
-JQ_AVAILABLE=true
-command -v jq &>/dev/null || {
-    echo -e "${YELLOW}Warning: jq is not installed. JSON will not be formatted.${NC}"
-    JQ_AVAILABLE=false
 }
 
 # --- Main ---
@@ -121,10 +153,12 @@ mapfile -t ITEMS_ARRAY < <(echo "$WORKSHOP_ITEMS")
 
 # --- Backup ---
 OLD_OUTPUT_FILE="${OUTPUT_FILE}.old"
-[ -f "$OUTPUT_FILE" ] && {
+if [ -f "$OUTPUT_FILE" ]; then
     echo -e "${YELLOW}Creating backup of existing file...${NC}"
-    cp "$OUTPUT_FILE" "$OLD_OUTPUT_FILE"
-}
+    mv "$OUTPUT_FILE" "$OLD_OUTPUT_FILE"
+else
+    echo -e "${GREEN}First run detected - no previous data file found${NC}"
+fi
 
 # --- Temp Directory ---
 TEMP_DIR=$(mktemp -d)
@@ -233,9 +267,9 @@ detect_changes() {
 
     echo -e "${YELLOW}Detecting changes...${NC}"
 
-    # If old file doesn't exist, all items are new
+    # If old file doesn't exist, this is the first run - skip notifications
     if [ ! -f "$old_file" ]; then
-        echo -e "${GREEN}No previous data found - all items are new${NC}"
+        echo -e "${GREEN}No previous data found - this is the first run, skipping notifications${NC}"
         return 0
     fi
 
@@ -870,11 +904,9 @@ fi
 echo "  ]" >>"$OUTPUT_FILE"
 echo "}" >>"$OUTPUT_FILE"
 
-# Format JSON if jq is available
-if [ "$JQ_AVAILABLE" = true ]; then
-    echo -e "${YELLOW}Formatting JSON...${NC}"
-    jq '.' "$OUTPUT_FILE" >"${OUTPUT_FILE}.tmp" && mv "${OUTPUT_FILE}.tmp" "$OUTPUT_FILE"
-fi
+# Format JSON with jq
+echo -e "${YELLOW}Formatting JSON...${NC}"
+jq '.' "$OUTPUT_FILE" >"${OUTPUT_FILE}.tmp" && mv "${OUTPUT_FILE}.tmp" "$OUTPUT_FILE"
 
 echo -e "${GREEN}Done! Collection saved to '$OUTPUT_FILE'${NC}"
 echo -e "${GREEN}Processed $ITEM_COUNT items total, saved $SAVED_ITEMS entries${NC}"
@@ -890,10 +922,7 @@ if command -v du &>/dev/null; then
     echo -e "${GREEN}File size: $FILE_SIZE${NC}"
 fi
 
-# Detect and report changes
-if [ -f "$OUTPUT_FILE" ] && [ -f "$OLD_OUTPUT_FILE" ]; then
+# Detect and report changes (only if old file exists)
+if [ -f "$OLD_OUTPUT_FILE" ]; then
     detect_changes "$OUTPUT_FILE" "$OLD_OUTPUT_FILE"
 fi
-
-# Final backup of current file for next run
-cp "$OUTPUT_FILE" "$OLD_OUTPUT_FILE"
