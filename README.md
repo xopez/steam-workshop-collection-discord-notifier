@@ -145,29 +145,6 @@ export BATCH_SIZE="25"
 export CURL_TIMEOUT="45"
 ```
 
-### Script Configuration
-Edit the script header to modify default settings:
-
-```bash
-# --- Configuration ---
-COLLECTION_ID=""
-OUTPUT_FILE="steam_collection.json"
-BATCH_SIZE=20
-MAX_PARALLEL=10
-DISCORD_WEBHOOK_URL=""
-MAX_DISCORD_EMBEDS=10
-CURL_TIMEOUT=30
-SCRAPING_DELAY=0.5
-```
-
-### Parameter Explanations
-
-- **BATCH_SIZE**: Number of items to process per API request (1-50)
-- **MAX_PARALLEL**: Maximum concurrent batch processes
-- **MAX_DISCORD_EMBEDS**: Maximum embeds per Discord message
-- **CURL_TIMEOUT**: Timeout for HTTP requests in seconds
-- **SCRAPING_DELAY**: Delay between scraping requests to avoid rate limiting
-
 ## 📊 Output Format
 
 ### JSON Structure
@@ -380,10 +357,9 @@ curl -H "Content-Type: application/json" \
 #### Rate limiting / Too many requests
 **Problem**: Making requests too quickly
 **Solutions**:
-- Increase SCRAPING_DELAY in script configuration
-- Reduce BATCH_SIZE
-- Reduce MAX_PARALLEL processes
+- Reduce batch size using `-b` parameter
 - Add delays between script runs
+- Try running during off-peak hours
 
 ### Debug Mode
 Enable debug output by modifying the script:
@@ -421,27 +397,12 @@ journalctl -u steam-workshop-monitor.timer
 ```bash
 # Increase batch size
 ./workshop_updates.sh -c 123456789 -b 50
-
-# Reduce parallel processes to avoid overwhelming the system
-# Edit script: MAX_PARALLEL=5
 ```
 
 ### For Small Collections (<100 items)
 ```bash
 # Smaller batch size for faster initial response
 ./workshop_updates.sh -c 123456789 -b 10
-
-# Increase parallel processes
-# Edit script: MAX_PARALLEL=15
-```
-
-### Network Optimization
-```bash
-# Increase timeout for slow connections
-# Edit script: CURL_TIMEOUT=60
-
-# Reduce scraping delay for faster processing (use carefully)
-# Edit script: SCRAPING_DELAY=0.2
 ```
 
 ## 🔒 Security Considerations
