@@ -288,7 +288,7 @@ detect_changes() {
             # Categorize changes based on data_source transitions
             if [ "$data_source_changed" = true ]; then
                 case "$old_data_source->$new_data_source" in
-                "scraped->api" | "null->api" | "unavailable->api")
+                "scraped->api" | "null->api" | "unavailable->api" | "unavailable->scraped")
                     listed_items+=("$id|$new_time|$new_title|$old_data_source|$new_data_source")
                     ;;
                 "api->scraped")
@@ -305,7 +305,7 @@ detect_changes() {
                     unavailable_items+=("$id|$new_time|$old_title|$old_data_source|$new_data_source")
                     ;;
                 "*->scraped")
-                    if [ "$old_data_source" != "api" ]; then
+                    if [ "$old_data_source" != "api" ] && [ "$old_data_source" != "unavailable" ]; then
                         if [ "$new_title" = "Unavailable resource" ]; then
                             unavailable_items+=("$id|$new_time|$old_title|$old_data_source|$new_data_source")
                         else
@@ -361,15 +361,17 @@ detect_changes() {
     done
 
     for item in "${listed_items[@]}"; do
-        IFS='|' read -r id time title _ _ <<<"$item"
+        IFS='|' read -r id time title old_source new_source <<<"$item"
         echo -e "${GREEN}✅ LISTED: $title - became publicly available${NC}"
         echo -e "${GREEN}    ID: $id | Link: https://steamcommunity.com/sharedfiles/filedetails/?id=$id${NC}"
+        echo -e "${GREEN}    Source change: $old_source → $new_source${NC}"
     done
 
     for item in "${unlisted_items[@]}"; do
-        IFS='|' read -r id time title _ _ <<<"$item"
+        IFS='|' read -r id time title old_source new_source <<<"$item"
         echo -e "${YELLOW}🔒 UNLISTED: $title - became private/unlisted${NC}"
         echo -e "${YELLOW}    ID: $id | Link: https://steamcommunity.com/sharedfiles/filedetails/?id=$id${NC}"
+        echo -e "${YELLOW}    Source change: $old_source → $new_source${NC}"
     done
 
     for item in "${unavailable_items[@]}"; do
