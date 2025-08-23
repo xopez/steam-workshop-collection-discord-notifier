@@ -14,7 +14,7 @@ A powerful Bash script that monitors Steam Workshop Collections for changes and 
 ### Console Output
 ![Console Output](img/console-output.png)
 
-‚## ✨ Features
+✨ Features
 
 - **Comprehensive Monitoring**: Tracks all changes in Steam Workshop Collections
 - **Smart Change Detection**: Detects new items, removals, updates, title changes, and availability status
