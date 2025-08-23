@@ -110,7 +110,7 @@ validate_discord_webhook() {
 
     # Check URL format
     if ! [[ "$DISCORD_WEBHOOK_URL" =~ ^https://discord\.com/api/webhooks/[0-9]+/[A-Za-z0-9_-]+$ ]] &&
-       ! [[ "$DISCORD_WEBHOOK_URL" =~ ^https://discordapp\.com/api/webhooks/[0-9]+/[A-Za-z0-9_-]+$ ]]; then
+        ! [[ "$DISCORD_WEBHOOK_URL" =~ ^https://discordapp\.com/api/webhooks/[0-9]+/[A-Za-z0-9_-]+$ ]]; then
         echo -e "${RED}Error: Invalid Discord webhook URL format${NC}"
         echo -e "${RED}Expected format: https://discord.com/api/webhooks/WEBHOOK_ID/WEBHOOK_TOKEN${NC}"
         echo -e "${RED}Provided: $DISCORD_WEBHOOK_URL${NC}"
@@ -138,46 +138,46 @@ validate_discord_webhook() {
     local response_body="${test_response%???}"
 
     case "$http_code" in
-        200|204)
+    200 | 204)
+        echo -e "${GREEN}Discord webhook validated successfully${NC}"
+        echo -e "${GREEN}Webhook is accessible and ready for notifications${NC}"
+        ;;
+    400)
+        # Check if it's just because of empty content (which means webhook works)
+        if echo "$response_body" | grep -q "Cannot send an empty message"; then
             echo -e "${GREEN}Discord webhook validated successfully${NC}"
             echo -e "${GREEN}Webhook is accessible and ready for notifications${NC}"
-            ;;
-        400)
-            # Check if it's just because of empty content (which means webhook works)
-            if echo "$response_body" | grep -q "Cannot send an empty message"; then
-                echo -e "${GREEN}Discord webhook validated successfully${NC}"
-                echo -e "${GREEN}Webhook is accessible and ready for notifications${NC}"
-            else
-                echo -e "${RED}Error: Bad request to Discord webhook (400)${NC}"
-                echo -e "${RED}The webhook URL format may be incorrect${NC}"
-                exit 1
-            fi
-            ;;
-        401)
-            echo -e "${RED}Error: Unauthorized Discord webhook (401)${NC}"
-            echo -e "${RED}The webhook token may be invalid${NC}"
+        else
+            echo -e "${RED}Error: Bad request to Discord webhook (400)${NC}"
+            echo -e "${RED}The webhook URL format may be incorrect${NC}"
             exit 1
-            ;;
-        404)
-            echo -e "${RED}Error: Discord webhook not found (404)${NC}"
-            echo -e "${RED}The webhook may have been deleted or the URL is incorrect${NC}"
-            exit 1
-            ;;
-        429)
-            echo -e "${YELLOW}Warning: Discord rate limit hit (429)${NC}"
-            echo -e "${YELLOW}Webhook is valid but rate limited - continuing anyway${NC}"
-            ;;
-        500|502|503|504)
-            echo -e "${YELLOW}Warning: Discord server error (${http_code})${NC}"
-            echo -e "${YELLOW}Discord may be experiencing issues - continuing anyway${NC}"
-            ;;
-        *)
-            echo -e "${RED}Error: Unexpected response from Discord webhook (${http_code})${NC}"
-            if [ -n "$response_body" ] && [ "$response_body" != "null" ]; then
-                echo -e "${RED}Response: $response_body${NC}"
-            fi
-            exit 1
-            ;;
+        fi
+        ;;
+    401)
+        echo -e "${RED}Error: Unauthorized Discord webhook (401)${NC}"
+        echo -e "${RED}The webhook token may be invalid${NC}"
+        exit 1
+        ;;
+    404)
+        echo -e "${RED}Error: Discord webhook not found (404)${NC}"
+        echo -e "${RED}The webhook may have been deleted or the URL is incorrect${NC}"
+        exit 1
+        ;;
+    429)
+        echo -e "${YELLOW}Warning: Discord rate limit hit (429)${NC}"
+        echo -e "${YELLOW}Webhook is valid but rate limited - continuing anyway${NC}"
+        ;;
+    500 | 502 | 503 | 504)
+        echo -e "${YELLOW}Warning: Discord server error (${http_code})${NC}"
+        echo -e "${YELLOW}Discord may be experiencing issues - continuing anyway${NC}"
+        ;;
+    *)
+        echo -e "${RED}Error: Unexpected response from Discord webhook (${http_code})${NC}"
+        if [ -n "$response_body" ] && [ "$response_body" != "null" ]; then
+            echo -e "${RED}Response: $response_body${NC}"
+        fi
+        exit 1
+        ;;
     esac
 }
 
