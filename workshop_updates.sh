@@ -101,6 +101,86 @@ check_dependencies() {
     fi
 }
 
+# --- Discord Webhook Validation Function ---
+validate_discord_webhook() {
+    # Skip validation if no webhook URL provided
+    [ -z "$DISCORD_WEBHOOK_URL" ] && return 0
+
+    echo -e "${YELLOW}Validating Discord webhook URL...${NC}"
+
+    # Check URL format
+    if ! [[ "$DISCORD_WEBHOOK_URL" =~ ^https://discord\.com/api/webhooks/[0-9]+/[A-Za-z0-9_-]+$ ]] &&
+       ! [[ "$DISCORD_WEBHOOK_URL" =~ ^https://discordapp\.com/api/webhooks/[0-9]+/[A-Za-z0-9_-]+$ ]]; then
+        echo -e "${RED}Error: Invalid Discord webhook URL format${NC}"
+        echo -e "${RED}Expected format: https://discord.com/api/webhooks/WEBHOOK_ID/WEBHOOK_TOKEN${NC}"
+        echo -e "${RED}Provided: $DISCORD_WEBHOOK_URL${NC}"
+        exit 1
+    fi
+
+    # Test webhook connectivity without sending a visible message
+    # Use the ?wait=true parameter to get a response and validate the webhook
+    local test_response
+    local webhook_test_url="${DISCORD_WEBHOOK_URL}?wait=true"
+
+    # Send an empty POST request to test the webhook endpoint
+    if ! test_response=$(curl -s -w "%{http_code}" -X POST \
+        -H "Content-Type: application/json" \
+        -d '{"content":""}' \
+        --max-time 10 \
+        "$webhook_test_url" 2>/dev/null); then
+        echo -e "${RED}Error: Failed to connect to Discord webhook${NC}"
+        echo -e "${RED}Please check your internet connection and webhook URL${NC}"
+        exit 1
+    fi
+
+    # Extract HTTP status code from response
+    local http_code="${test_response: -3}"
+    local response_body="${test_response%???}"
+
+    case "$http_code" in
+        200|204)
+            echo -e "${GREEN}Discord webhook validated successfully${NC}"
+            echo -e "${GREEN}Webhook is accessible and ready for notifications${NC}"
+            ;;
+        400)
+            # Check if it's just because of empty content (which means webhook works)
+            if echo "$response_body" | grep -q "Cannot send an empty message"; then
+                echo -e "${GREEN}Discord webhook validated successfully${NC}"
+                echo -e "${GREEN}Webhook is accessible and ready for notifications${NC}"
+            else
+                echo -e "${RED}Error: Bad request to Discord webhook (400)${NC}"
+                echo -e "${RED}The webhook URL format may be incorrect${NC}"
+                exit 1
+            fi
+            ;;
+        401)
+            echo -e "${RED}Error: Unauthorized Discord webhook (401)${NC}"
+            echo -e "${RED}The webhook token may be invalid${NC}"
+            exit 1
+            ;;
+        404)
+            echo -e "${RED}Error: Discord webhook not found (404)${NC}"
+            echo -e "${RED}The webhook may have been deleted or the URL is incorrect${NC}"
+            exit 1
+            ;;
+        429)
+            echo -e "${YELLOW}Warning: Discord rate limit hit (429)${NC}"
+            echo -e "${YELLOW}Webhook is valid but rate limited - continuing anyway${NC}"
+            ;;
+        500|502|503|504)
+            echo -e "${YELLOW}Warning: Discord server error (${http_code})${NC}"
+            echo -e "${YELLOW}Discord may be experiencing issues - continuing anyway${NC}"
+            ;;
+        *)
+            echo -e "${RED}Error: Unexpected response from Discord webhook (${http_code})${NC}"
+            if [ -n "$response_body" ] && [ "$response_body" != "null" ]; then
+                echo -e "${RED}Response: $response_body${NC}"
+            fi
+            exit 1
+            ;;
+    esac
+}
+
 # --- Preflight Checks ---
 check_dependencies
 
@@ -114,6 +194,9 @@ check_dependencies
     show_help
     exit 1
 }
+
+# Validate Discord webhook if provided
+validate_discord_webhook
 
 # --- Main ---
 echo -e "${GREEN}Loading Steam Workshop Collection ID: $COLLECTION_ID${NC}"
