@@ -5,7 +5,7 @@
 
 # --- Configuration ---
 COLLECTION_ID=""
-OUTPUT_FILE="steam_collection"
+OUTPUT_FILE="$HOME/.steam-collections/steam_collection"
 BATCH_SIZE=20
 MAX_PARALLEL=10
 DISCORD_WEBHOOK_URL=""
@@ -202,6 +202,18 @@ validate_discord_webhook
 
 # Generate collection-specific output filename
 OUTPUT_FILE="${OUTPUT_FILE}_${COLLECTION_ID}.json"
+
+# Create output directory if it doesn't exist
+OUTPUT_DIR=$(dirname "$OUTPUT_FILE")
+if [ ! -d "$OUTPUT_DIR" ]; then
+    echo -e "${YELLOW}Creating directory: $OUTPUT_DIR${NC}"
+    if ! mkdir -p "$OUTPUT_DIR" 2>/dev/null; then
+        echo -e "${RED}Error: Failed to create output directory: $OUTPUT_DIR${NC}"
+        echo -e "${RED}Please check permissions or specify a different output path${NC}"
+        exit 1
+    fi
+fi
+
 echo -e "${YELLOW}Output file will be: $OUTPUT_FILE${NC}"
 
 # --- Main ---
