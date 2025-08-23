@@ -166,36 +166,35 @@ trap 'rm -rf "$TEMP_DIR"' EXIT
 
 # --- Utility Functions ---
 get_timezone() {
-    local month="$1"
-    local day="$2"
-    local month_num=0
+    local month="$1" day="$2"
+
+    # Convert month name to number efficiently
     case "$month" in
-    Jan) month_num=1 ;;
-    Feb) month_num=2 ;;
-    Mar) month_num=3 ;;
-    Apr) month_num=4 ;;
-    May) month_num=5 ;;
-    Jun) month_num=6 ;;
-    Jul) month_num=7 ;;
-    Aug) month_num=8 ;;
-    Sep) month_num=9 ;;
-    Oct) month_num=10 ;;
-    Nov) month_num=11 ;;
-    Dec) month_num=12 ;;
+    Jan) local month_num=1 ;;
+    Feb) local month_num=2 ;;
+    Mar) local month_num=3 ;;
+    Apr | May | Jun | Jul | Aug | Sep)
+        echo "PDT"
+        return
+        ;;
+    Oct) local month_num=10 ;;
+    Nov) local month_num=11 ;;
+    Dec)
+        echo "PST"
+        return
+        ;;
     *)
         echo "PST"
         return
         ;;
     esac
-    if [ "$month_num" -ge 4 ] && [ "$month_num" -le 9 ]; then
-        echo "PDT"
-    elif [ "$month_num" -eq 3 ] && [ "$day" -ge 8 ]; then
-        echo "PDT"
-    elif [ "$month_num" -eq 10 ] || { [ "$month_num" -eq 11 ] && [ "$day" -le 7 ]; }; then
-        echo "PDT"
-    else
-        echo "PST"
-    fi
+
+    # Handle DST transition months
+    case "$month_num" in
+    3) [ "$day" -ge 8 ] && echo "PDT" || echo "PST" ;;
+    10 | 11) [ "$month_num" -eq 11 ] && [ "$day" -gt 7 ] && echo "PST" || echo "PDT" ;;
+    *) echo "PST" ;;
+    esac
 }
 escape_json() { echo "$1" | sed 's/\\/\\\\/g; s/"/\\"/g; s/\t/\\t/g; s/\r/\\r/g; s/\n/\\n/g'; }
 
