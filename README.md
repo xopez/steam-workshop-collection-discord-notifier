@@ -6,6 +6,20 @@ A powerful Bash script that monitors Steam Workshop Collections for changes and 
 ![Bash](https://img.shields.io/badge/bash-5.0+-green.svg)
 ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS-lightgrey.svg)
 
+## 📸 Screenshots
+
+### Discord Notifications
+![Discord Notifications](img/discord-notifications.png)
+*Rich embed notifications showing different types of changes*
+
+### Console Output
+![Console Output](img/console-output.png)
+*Detailed console output with colored status messages*
+
+### Change Detection
+![Change Detection](img/change-detection.png)
+*Overview of detected changes with timestamps*
+
 ## ✨ Features
 
 - **Comprehensive Monitoring**: Tracks all changes in Steam Workshop Collections
@@ -103,6 +117,9 @@ chmod +x workshop_updates.sh
 
 ### Finding Your Collection ID
 
+![Collection ID Location](img/collection-id-example.png)
+*Example showing where to find the Collection ID in a Steam Workshop Collection URL*
+
 1. Go to your Steam Workshop Collection in a web browser
 2. Look at the URL: `https://steamcommunity.com/sharedfiles/filedetails/?id=COLLECTION_ID`
 3. The number after `id=` is your Collection ID
@@ -111,6 +128,9 @@ Example: `https://steamcommunity.com/sharedfiles/filedetails/?id=2845754265`
 Collection ID: `2845754265`
 
 ## 🔧 Discord Webhook Setup
+
+![Discord Webhook Setup](img/discord-webhook-setup.png)
+*Step-by-step Discord webhook creation process*
 
 ### Creating a Discord Webhook
 
@@ -134,6 +154,9 @@ https://discord.com/api/webhooks/WEBHOOK_ID/WEBHOOK_TOKEN
 ```
 
 ## ⚙️ Configuration
+
+![Configuration Example](img/configuration-example.png)
+*Example of script configuration and output*
 
 ### Environment Variables
 You can set default values using environment variables:

@@ -239,21 +239,21 @@ create_item_embed() {
     fi
     local description=""
     case "$change_type" in
-    listed) description="✅ **Item became publicly listed**\\n🔗 [View on Steam Workshop]($url)" ;;
-    unlisted) description="🔒 **Item became unlisted/private**\\n🔗 [View on Steam Workshop]($url)" ;;
-    removed) description="❌ **Item removed from collection**\\n🔗 [View on Steam Workshop]($url)" ;;
-    new) description="📦 **New item added to collection**\\n🔗 [View on Steam Workshop]($url)" ;;
-    updated) description="🔄 **Item updated**\\n**Previous:** $old_time_str\\n**Current:** $new_time_str\\n🔗 [View on Steam Workshop]($url)" ;;
-    unavailable) description="💀 **Item became unavailable**\\n🔗 [View on Steam Workshop]($url)" ;;
+    listed) description="✅ **Item became publicly listed**\\n\\n🔗 [View on Steam Workshop]($url)" ;;
+    unlisted) description="🔒 **Item became unlisted/private**\\n\\n🔗 [View on Steam Workshop]($url)" ;;
+    removed) description="❌ **Item removed from collection**\\n\\n🔗 [View on Steam Workshop]($url)" ;;
+    new) description="📦 **New item added to collection**\\n\\n🔗 [View on Steam Workshop]($url)" ;;
+    updated) description="🔄 **Item updated**\\n\\n⏰ **Previous:** $old_time_str\\n⏰ **Current:** $new_time_str\\n\\n🔗 [View on Steam Workshop]($url)" ;;
+    unavailable) description="💀 **Item became unavailable**\\n\\n🔗 [View on Steam Workshop]($url)" ;;
     title_changed)
         local old_title_escaped
         old_title_escaped=$(escape_json "$old_title")
-        description="📝 **Title changed**\\n**Previous:** $old_title_escaped\\n**Current:** $title_escaped\\n🔗 [View on Steam Workshop]($url)"
+        description="📝 **Title changed**\\n\\n📋 **Previous:** $old_title_escaped\\n📋 **Current:** $title_escaped\\n\\n🔗 [View on Steam Workshop]($url)"
         ;;
     title_and_update)
         local old_title_escaped
         old_title_escaped=$(escape_json "$old_title")
-        description="🔄📝 **Title and content updated**\\n**Previous Title:** $old_title_escaped\\n**Current Title:** $title_escaped\\n**Previous Update:** $old_time_str\\n**Current Update:** $new_time_str\\n🔗 [View on Steam Workshop]($url)"
+        description="🔄📝 **Title and content updated**\\n\\n📋 **Previous Title:** $old_title_escaped\\n📋 **Current Title:** $title_escaped\\n\\n⏰ **Previous Update:** $old_time_str\\n⏰ **Current Update:** $new_time_str\\n\\n🔗 [View on Steam Workshop]($url)"
         ;;
     esac
     local embed_json
@@ -433,10 +433,25 @@ detect_changes() {
 
     for item in "${title_and_update_items[@]}"; do
         IFS='|' read -r id old_time new_time old_title new_title data_source <<<"$item"
-        local old_time_str
-        old_time_str=$(date -d "@$old_time" '+%Y-%m-%d %H:%M:%S UTC' 2>/dev/null || echo "Unknown")
-        local new_time_str
-        new_time_str=$(date -d "@$new_time" '+%Y-%m-%d %H:%M:%S UTC' 2>/dev/null || echo "Unknown")
+        local old_time_utc old_time_local old_time_str
+        local new_time_utc new_time_local new_time_str
+
+        old_time_utc=$(date -d "@$old_time" '+%Y-%m-%d %H:%M:%S UTC' 2>/dev/null || echo "Unknown")
+        old_time_local=$(date -d "@$old_time" '+%Y-%m-%d %H:%M:%S %Z' 2>/dev/null)
+        if [ -n "$old_time_local" ] && [ "$old_time_local" != "Invalid" ]; then
+            old_time_str="$old_time_utc ($old_time_local)"
+        else
+            old_time_str="$old_time_utc"
+        fi
+
+        new_time_utc=$(date -d "@$new_time" '+%Y-%m-%d %H:%M:%S UTC' 2>/dev/null || echo "Unknown")
+        new_time_local=$(date -d "@$new_time" '+%Y-%m-%d %H:%M:%S %Z' 2>/dev/null)
+        if [ -n "$new_time_local" ] && [ "$new_time_local" != "Invalid" ]; then
+            new_time_str="$new_time_utc ($new_time_local)"
+        else
+            new_time_str="$new_time_utc"
+        fi
+
         echo -e "${YELLOW}🔄📝 TITLE & UPDATE: \"$old_title\" → \"$new_title\"${NC}"
         echo -e "${YELLOW}    ID: $id | Link: https://steamcommunity.com/sharedfiles/filedetails/?id=$id${NC}"
         echo -e "${YELLOW}    Update: $old_time_str → $new_time_str${NC}"
@@ -444,10 +459,25 @@ detect_changes() {
 
     for item in "${updated_items[@]}"; do
         IFS='|' read -r id old_time new_time title data_source <<<"$item"
-        local old_time_str
-        old_time_str=$(date -d "@$old_time" '+%Y-%m-%d %H:%M:%S UTC' 2>/dev/null || echo "Unknown")
-        local new_time_str
-        new_time_str=$(date -d "@$new_time" '+%Y-%m-%d %H:%M:%S UTC' 2>/dev/null || echo "Unknown")
+        local old_time_utc old_time_local old_time_str
+        local new_time_utc new_time_local new_time_str
+
+        old_time_utc=$(date -d "@$old_time" '+%Y-%m-%d %H:%M:%S UTC' 2>/dev/null || echo "Unknown")
+        old_time_local=$(date -d "@$old_time" '+%Y-%m-%d %H:%M:%S %Z' 2>/dev/null)
+        if [ -n "$old_time_local" ] && [ "$old_time_local" != "Invalid" ]; then
+            old_time_str="$old_time_utc ($old_time_local)"
+        else
+            old_time_str="$old_time_utc"
+        fi
+
+        new_time_utc=$(date -d "@$new_time" '+%Y-%m-%d %H:%M:%S UTC' 2>/dev/null || echo "Unknown")
+        new_time_local=$(date -d "@$new_time" '+%Y-%m-%d %H:%M:%S %Z' 2>/dev/null)
+        if [ -n "$new_time_local" ] && [ "$new_time_local" != "Invalid" ]; then
+            new_time_str="$new_time_utc ($new_time_local)"
+        else
+            new_time_str="$new_time_utc"
+        fi
+
         echo -e "${YELLOW}🔄 UPDATED: $title${NC}"
         echo -e "${YELLOW}    ID: $id | Link: https://steamcommunity.com/sharedfiles/filedetails/?id=$id${NC}"
         echo -e "${YELLOW}    $old_time_str → $new_time_str${NC}"

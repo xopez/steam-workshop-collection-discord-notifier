@@ -22,3 +22,25 @@ Icon[]
 Network Trash Folder
 Temporary Items
 .apdisk
+
+# Ignore common temporary files
+*.tmp
+*.log
+*.old
+
+# Ignore backup files
+*.backup
+*.bak
+
+# Ignore system files
+Thumbs.db
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ignore output files
+steam_collection.json
+steam_collection.json.old
