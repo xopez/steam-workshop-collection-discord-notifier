@@ -295,29 +295,29 @@ detect_changes() {
     local temp_new="$TEMP_DIR/new_items.tmp"
 
     # Extract items with all relevant fields
-    jq -r '.items[] | "\(.publishedfileid)|\(.time_updated)|\(.title)|\(.data_source)"' "$old_file" >"$temp_old" 2>/dev/null
-    jq -r '.items[] | "\(.publishedfileid)|\(.time_updated)|\(.title)|\(.data_source)"' "$new_file" >"$temp_new" 2>/dev/null
+    jq -r '.items[] | "\(.publishedfileid)§\(.time_updated)§\(.title)§\(.data_source)"' "$old_file" >"$temp_old" 2>/dev/null
+    jq -r '.items[] | "\(.publishedfileid)§\(.time_updated)§\(.title)§\(.data_source)"' "$new_file" >"$temp_new" 2>/dev/null
 
     # Find new items (completely new to collection)
-    while IFS='|' read -r id new_time title data_source; do
-        if ! grep -q "^$id|" "$temp_old" 2>/dev/null; then
-            new_items+=("$id|$new_time|$title|$data_source")
+    while IFS='§' read -r id new_time title data_source; do
+        if ! grep -q "^$id§" "$temp_old" 2>/dev/null; then
+            new_items+=("$id§$new_time§$title§$data_source")
         fi
     done <"$temp_new"
 
     # Find removed items (no longer in collection)
-    while IFS='|' read -r id old_time title data_source; do
-        if ! grep -q "^$id|" "$temp_new" 2>/dev/null; then
-            removed_items+=("$id|$old_time|$title|$data_source")
+    while IFS='§' read -r id old_time title data_source; do
+        if ! grep -q "^$id§" "$temp_new" 2>/dev/null; then
+            removed_items+=("$id§$old_time§$title§$data_source")
         fi
     done <"$temp_old"
 
     # Find changed items (existing items with modifications)
-    while IFS='|' read -r id new_time new_title new_data_source; do
+    while IFS='§' read -r id new_time new_title new_data_source; do
         local old_line
-        old_line=$(grep "^$id|" "$temp_old" 2>/dev/null)
+        old_line=$(grep "^$id§" "$temp_old" 2>/dev/null)
         if [ -n "$old_line" ]; then
-            IFS='|' read -r _ old_time old_title old_data_source <<<"$old_line"
+            IFS='§' read -r _ old_time old_title old_data_source <<<"$old_line"
 
             local time_changed=false
             local title_changed=false
@@ -340,48 +340,48 @@ detect_changes() {
             if [ "$data_source_changed" = true ]; then
                 case "$old_data_source->$new_data_source" in
                 "scraped->api" | "null->api" | "unavailable->api" | "unavailable->scraped")
-                    listed_items+=("$id|$new_time|$new_title|$old_data_source|$new_data_source")
+                    listed_items+=("$id§$new_time§$new_title§$old_data_source§$new_data_source")
                     ;;
                 "api->scraped")
                     if [ "$new_title" = "Steam Community :: Error" ]; then
-                        unavailable_items+=("$id|$new_time|$old_title|$old_data_source|$new_data_source")
+                        unavailable_items+=("$id§$new_time§$old_title§$old_data_source§$new_data_source")
                     else
-                        unlisted_items+=("$id|$new_time|$new_title|$old_data_source|$new_data_source")
+                        unlisted_items+=("$id§$new_time§$new_title§$old_data_source§$new_data_source")
                     fi
                     ;;
                 "api->unavailable" | "scraped->unavailable")
-                    unavailable_items+=("$id|$new_time|$old_title|$old_data_source|$new_data_source")
+                    unavailable_items+=("$id§$new_time§$old_title§$old_data_source§$new_data_source")
                     ;;
                 "*->null" | "api->null" | "scraped->null" | "unavailable->null")
-                    unavailable_items+=("$id|$new_time|$old_title|$old_data_source|$new_data_source")
+                    unavailable_items+=("$id§$new_time§$old_title§$old_data_source§$new_data_source")
                     ;;
                 "*->scraped")
                     if [ "$old_data_source" != "api" ] && [ "$old_data_source" != "unavailable" ]; then
                         if [ "$new_title" = "Steam Community :: Error" ]; then
-                            unavailable_items+=("$id|$new_time|$old_title|$old_data_source|$new_data_source")
+                            unavailable_items+=("$id§$new_time§$old_title§$old_data_source§$new_data_source")
                         else
-                            unlisted_items+=("$id|$new_time|$new_title|$old_data_source|$new_data_source")
+                            unlisted_items+=("$id§$new_time§$new_title§$old_data_source§$new_data_source")
                         fi
                     fi
                     ;;
                 "*->unavailable")
-                    unavailable_items+=("$id|$new_time|$old_title|$old_data_source|$new_data_source")
+                    unavailable_items+=("$id§$new_time§$old_title§$old_data_source§$new_data_source")
                     ;;
                 esac
             # Handle content changes (same data_source)
             elif [ "$time_changed" = true ] && [ "$title_changed" = true ]; then
                 if [ "$new_title" = "Steam Community :: Error" ]; then
-                    unavailable_items+=("$id|$new_time|$old_title|$new_data_source|$new_data_source")
+                    unavailable_items+=("$id§$new_time§$old_title§$new_data_source§$new_data_source")
                 else
-                    title_and_update_items+=("$id|$old_time|$new_time|$old_title|$new_title|$new_data_source")
+                    title_and_update_items+=("$id§$old_time§$new_time§$old_title§$new_title§$new_data_source")
                 fi
             elif [ "$time_changed" = true ]; then
-                updated_items+=("$id|$old_time|$new_time|$new_title|$new_data_source")
+                updated_items+=("$id§$old_time§$new_time§$new_title§$new_data_source")
             elif [ "$title_changed" = true ]; then
                 if [ "$new_title" = "Steam Community :: Error" ]; then
-                    unavailable_items+=("$id|$new_time|$old_title|$new_data_source|$new_data_source")
+                    unavailable_items+=("$id§$new_time§$old_title§$new_data_source§$new_data_source")
                 else
-                    title_changed_items+=("$id|$old_title|$new_title|$new_data_source")
+                    title_changed_items+=("$id§$old_title§$new_title§$new_data_source")
                 fi
             fi
         fi
@@ -400,39 +400,39 @@ detect_changes() {
 
     # Report individual changes to console
     for item in "${new_items[@]}"; do
-        IFS='|' read -r id time title data_source <<<"$item"
+        IFS='§' read -r id time title data_source <<<"$item"
         echo -e "${GREEN}📦 NEW: $title${NC}"
         echo -e "${GREEN}    ID: $id | Link: https://steamcommunity.com/sharedfiles/filedetails/?id=$id${NC}"
     done
 
     for item in "${removed_items[@]}"; do
-        IFS='|' read -r id time title data_source <<<"$item"
+        IFS='§' read -r id time title data_source <<<"$item"
         echo -e "${RED}❌ REMOVED: $title${NC}"
         echo -e "${RED}    ID: $id | Link: https://steamcommunity.com/sharedfiles/filedetails/?id=$id${NC}"
     done
 
     for item in "${listed_items[@]}"; do
-        IFS='|' read -r id time title old_source new_source <<<"$item"
+        IFS='§' read -r id time title old_source new_source <<<"$item"
         echo -e "${GREEN}✅ LISTED: $title - became publicly available${NC}"
         echo -e "${GREEN}    ID: $id | Link: https://steamcommunity.com/sharedfiles/filedetails/?id=$id${NC}"
         echo -e "${GREEN}    Source change: $old_source → $new_source${NC}"
     done
 
     for item in "${unlisted_items[@]}"; do
-        IFS='|' read -r id time title old_source new_source <<<"$item"
+        IFS='§' read -r id time title old_source new_source <<<"$item"
         echo -e "${YELLOW}🔒 UNLISTED: $title - became private/unlisted${NC}"
         echo -e "${YELLOW}    ID: $id | Link: https://steamcommunity.com/sharedfiles/filedetails/?id=$id${NC}"
         echo -e "${YELLOW}    Source change: $old_source → $new_source${NC}"
     done
 
     for item in "${unavailable_items[@]}"; do
-        IFS='|' read -r id time title _ _ <<<"$item"
+        IFS='§' read -r id time title _ _ <<<"$item"
         echo -e "${RED}💀 UNAVAILABLE: $title - no longer accessible${NC}"
         echo -e "${RED}    ID: $id | Link: https://steamcommunity.com/sharedfiles/filedetails/?id=$id${NC}"
     done
 
     for item in "${title_and_update_items[@]}"; do
-        IFS='|' read -r id old_time new_time old_title new_title data_source <<<"$item"
+        IFS='§' read -r id old_time new_time old_title new_title data_source <<<"$item"
         local old_time_utc old_time_local old_time_str
         local new_time_utc new_time_local new_time_str
 
@@ -458,7 +458,7 @@ detect_changes() {
     done
 
     for item in "${updated_items[@]}"; do
-        IFS='|' read -r id old_time new_time title data_source <<<"$item"
+        IFS='§' read -r id old_time new_time title data_source <<<"$item"
         local old_time_utc old_time_local old_time_str
         local new_time_utc new_time_local new_time_str
 
@@ -484,7 +484,7 @@ detect_changes() {
     done
 
     for item in "${title_changed_items[@]}"; do
-        IFS='|' read -r id old_title new_title data_source <<<"$item"
+        IFS='§' read -r id old_title new_title data_source <<<"$item"
         echo -e "${YELLOW}📝 TITLE CHANGED: \"$old_title\" → \"$new_title\"${NC}"
         echo -e "${YELLOW}    ID: $id | Link: https://steamcommunity.com/sharedfiles/filedetails/?id=$id${NC}"
     done
@@ -508,7 +508,7 @@ detect_changes() {
 
         # Add new items (green)
         for item in "${new_items[@]}"; do
-            IFS='|' read -r id time title data_source <<<"$item"
+            IFS='§' read -r id time title data_source <<<"$item"
             local preview_url
             preview_url=$(jq -r --arg id "$id" '.items[] | select(.publishedfileid == $id) | .preview_url // empty' "$new_file" 2>/dev/null)
             all_embeds+=("$(create_item_embed "$id" "$title" "new" "" "$time" "5763719" "" "$preview_url")")
@@ -517,7 +517,7 @@ detect_changes() {
 
         # Add removed items (red)
         for item in "${removed_items[@]}"; do
-            IFS='|' read -r id time title data_source <<<"$item"
+            IFS='§' read -r id time title data_source <<<"$item"
             local preview_url
             preview_url=$(jq -r --arg id "$id" '.items[] | select(.publishedfileid == $id) | .preview_url // empty' "$old_file" 2>/dev/null)
             all_embeds+=("$(create_item_embed "$id" "$title" "removed" "$time" "" "15158332" "" "$preview_url")")
@@ -526,7 +526,7 @@ detect_changes() {
 
         # Add listed items (blue)
         for item in "${listed_items[@]}"; do
-            IFS='|' read -r id time title _ _ <<<"$item"
+            IFS='§' read -r id time title _ _ <<<"$item"
             local preview_url
             preview_url=$(jq -r --arg id "$id" '.items[] | select(.publishedfileid == $id) | .preview_url // empty' "$new_file" 2>/dev/null)
             all_embeds+=("$(create_item_embed "$id" "$title" "listed" "" "$time" "3447003" "" "$preview_url")")
@@ -535,7 +535,7 @@ detect_changes() {
 
         # Add unlisted items (orange)
         for item in "${unlisted_items[@]}"; do
-            IFS='|' read -r id time title _ _ <<<"$item"
+            IFS='§' read -r id time title _ _ <<<"$item"
             local preview_url
             preview_url=$(jq -r --arg id "$id" '.items[] | select(.publishedfileid == $id) | .preview_url // empty' "$new_file" 2>/dev/null)
             all_embeds+=("$(create_item_embed "$id" "$title" "unlisted" "" "$time" "15105570" "" "$preview_url")")
@@ -544,7 +544,7 @@ detect_changes() {
 
         # Add unavailable items (dark red)
         for item in "${unavailable_items[@]}"; do
-            IFS='|' read -r id time title _ _ <<<"$item"
+            IFS='§' read -r id time title _ _ <<<"$item"
             # For unavailable items, try to get preview from old file since current might not have it
             local preview_url
             preview_url=$(jq -r --arg id "$id" '.items[] | select(.publishedfileid == $id) | .preview_url // empty' "$old_file" 2>/dev/null)
@@ -554,7 +554,7 @@ detect_changes() {
 
         # Add title and update changes (purple)
         for item in "${title_and_update_items[@]}"; do
-            IFS='|' read -r id old_time new_time old_title new_title data_source <<<"$item"
+            IFS='§' read -r id old_time new_time old_title new_title data_source <<<"$item"
             local preview_url
             preview_url=$(jq -r --arg id "$id" '.items[] | select(.publishedfileid == $id) | .preview_url // empty' "$new_file" 2>/dev/null)
             all_embeds+=("$(create_item_embed "$id" "$new_title" "title_and_update" "$old_time" "$new_time" "10181046" "$old_title" "$preview_url")")
@@ -563,7 +563,7 @@ detect_changes() {
 
         # Add update only changes (yellow)
         for item in "${updated_items[@]}"; do
-            IFS='|' read -r id old_time new_time title data_source <<<"$item"
+            IFS='§' read -r id old_time new_time title data_source <<<"$item"
             local preview_url
             preview_url=$(jq -r --arg id "$id" '.items[] | select(.publishedfileid == $id) | .preview_url // empty' "$new_file" 2>/dev/null)
             all_embeds+=("$(create_item_embed "$id" "$title" "updated" "$old_time" "$new_time" "16776960" "" "$preview_url")")
@@ -572,7 +572,7 @@ detect_changes() {
 
         # Add title only changes (light blue)
         for item in "${title_changed_items[@]}"; do
-            IFS='|' read -r id old_title new_title data_source <<<"$item"
+            IFS='§' read -r id old_title new_title data_source <<<"$item"
             local preview_url
             preview_url=$(jq -r --arg id "$id" '.items[] | select(.publishedfileid == $id) | .preview_url // empty' "$new_file" 2>/dev/null)
             all_embeds+=("$(create_item_embed "$id" "$new_title" "title_changed" "" "" "5814783" "$old_title" "$preview_url")")
