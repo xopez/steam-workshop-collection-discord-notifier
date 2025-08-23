@@ -221,14 +221,22 @@ create_item_embed() {
     if [ "$old_time" != "null" ] && [ -n "$old_time" ]; then
         local old_utc old_local
         old_utc=$(date -d "@$old_time" '+%Y-%m-%d %H:%M:%S UTC' 2>/dev/null || echo "Invalid")
-        old_local=$(date -d "@$old_time" '+%Y-%m-%d %H:%M:%S %Z' 2>/dev/null || echo "Invalid")
-        old_time_str="$old_utc ($old_local)"
+        old_local=$(date -d "@$old_time" '+%Y-%m-%d %H:%M:%S %Z' 2>/dev/null)
+        if [ -n "$old_local" ] && [ "$old_local" != "Invalid" ]; then
+            old_time_str="$old_utc ($old_local)"
+        else
+            old_time_str="$old_utc"
+        fi
     fi
     if [ "$new_time" != "null" ] && [ -n "$new_time" ]; then
         local new_utc new_local
         new_utc=$(date -d "@$new_time" '+%Y-%m-%d %H:%M:%S UTC' 2>/dev/null || echo "Invalid")
-        new_local=$(date -d "@$new_time" '+%Y-%m-%d %H:%M:%S %Z' 2>/dev/null || echo "Invalid")
-        new_time_str="$new_utc ($new_local)"
+        new_local=$(date -d "@$new_time" '+%Y-%m-%d %H:%M:%S %Z' 2>/dev/null)
+        if [ -n "$new_local" ] && [ "$new_local" != "Invalid" ]; then
+            new_time_str="$new_utc ($new_local)"
+        else
+            new_time_str="$new_utc"
+        fi
     fi
     local description=""
     case "$change_type" in
