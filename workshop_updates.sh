@@ -5,7 +5,7 @@
 
 # --- Configuration ---
 COLLECTION_ID=""
-OUTPUT_FILE="steam_collection.json"
+OUTPUT_FILE="steam_collection"
 BATCH_SIZE=20
 MAX_PARALLEL=10
 DISCORD_WEBHOOK_URL=""
@@ -26,13 +26,15 @@ Usage: $0 -c COLLECTION_ID [-o OUTPUT_FILE] [-b BATCH_SIZE] [-w WEBHOOK_URL]
 
 Options:
   -c COLLECTION_ID  Steam Workshop Collection ID (required)
-  -o OUTPUT_FILE    Output JSON file (default: steam_collection.json)
+  -o OUTPUT_FILE    Output JSON file prefix (default: steam_collection)
+                    Final filename will be: {prefix}_{collection_id}.json
   -b BATCH_SIZE     Batch size for API requests (default: 20, max: 50)
   -w WEBHOOK_URL    Discord webhook URL for notifications (optional)
   -h                Show this help
 
 Example:
-  $0 -c 123456789 -o my_collection.json -b 30 -w https://discord.com/api/webhooks/...
+  $0 -c 123456789 -o my_collection -b 30 -w https://discord.com/api/webhooks/...
+  This creates: my_collection_123456789.json
 EOF
 }
 
@@ -197,6 +199,10 @@ check_dependencies
 
 # Validate Discord webhook if provided
 validate_discord_webhook
+
+# Generate collection-specific output filename
+OUTPUT_FILE="${OUTPUT_FILE}_${COLLECTION_ID}.json"
+echo -e "${YELLOW}Output file will be: $OUTPUT_FILE${NC}"
 
 # --- Main ---
 echo -e "${GREEN}Loading Steam Workshop Collection ID: $COLLECTION_ID${NC}"
