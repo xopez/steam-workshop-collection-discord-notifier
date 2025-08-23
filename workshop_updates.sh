@@ -218,8 +218,18 @@ create_item_embed() {
     title_escaped=$(escape_json "$title")
     local url="https://steamcommunity.com/sharedfiles/filedetails/?id=$item_id"
     local old_time_str="Unknown" new_time_str="Unknown"
-    if [ "$old_time" != "null" ] && [ -n "$old_time" ]; then old_time_str=$(date -d "@$old_time" '+%Y-%m-%d %H:%M:%S UTC' 2>/dev/null || echo "Invalid"); fi
-    if [ "$new_time" != "null" ] && [ -n "$new_time" ]; then new_time_str=$(date -d "@$new_time" '+%Y-%m-%d %H:%M:%S UTC' 2>/dev/null || echo "Invalid"); fi
+    if [ "$old_time" != "null" ] && [ -n "$old_time" ]; then
+        local old_utc old_local
+        old_utc=$(date -d "@$old_time" '+%Y-%m-%d %H:%M:%S UTC' 2>/dev/null || echo "Invalid")
+        old_local=$(date -d "@$old_time" '+%Y-%m-%d %H:%M:%S %Z' 2>/dev/null || echo "Invalid")
+        old_time_str="$old_utc ($old_local)"
+    fi
+    if [ "$new_time" != "null" ] && [ -n "$new_time" ]; then
+        local new_utc new_local
+        new_utc=$(date -d "@$new_time" '+%Y-%m-%d %H:%M:%S UTC' 2>/dev/null || echo "Invalid")
+        new_local=$(date -d "@$new_time" '+%Y-%m-%d %H:%M:%S %Z' 2>/dev/null || echo "Invalid")
+        new_time_str="$new_utc ($new_local)"
+    fi
     local description=""
     case "$change_type" in
     listed) description="✅ **Item became publicly listed**\\n🔗 [View on Steam Workshop]($url)" ;;
