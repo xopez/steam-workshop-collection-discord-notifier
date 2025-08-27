@@ -6,7 +6,7 @@
 # --- Configuration ---
 COLLECTION_ID=""
 OUTPUT_FILE="$HOME/.steam-collections/steam_collection"
-BATCH_SIZE=20
+BATCH_SIZE=50
 MAX_PARALLEL=10
 DISCORD_WEBHOOK_URL=""
 MAX_DISCORD_EMBEDS=10
